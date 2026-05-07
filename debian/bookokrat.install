@@ -1,0 +1,4 @@
+target/release/bookokrat usr/bin
+debian/io.github.bugzmanov.bookokrat.metainfo.xml usr/share/metainfo
+debian/bookokrat.1 usr/share/man/man1
+debian/bookokrat.svg usr/share/icons/hicolor/scalable/apps

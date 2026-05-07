@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="console-application">
+  <id>io.github.bugzmanov.bookokrat</id>
+  <metadata_license>FSFAP</metadata_license>
+  <project_license>AGPL-3.0-or-later</project_license>
+  <name>Bookokrat</name>
+  <summary>Terminal EPUB/PDF reader with Vim-style navigation</summary>
+  <description>
+    <p>
+      Bookokrat is a fast terminal UI reader for EPUB and PDF documents
+      with a split layout showing the library or table of contents on the
+      left and the document on the right.
+    </p>
+    <p>Key features include:</p>
+    <ul>
+      <li>EPUB and PDF support with optional DJVU rendering</li>
+      <li>Vim-style keybindings and normal mode for keyboard-driven navigation</li>
+      <li>Inline comments and annotations stored in persistent YAML files with Markdown export</li>
+      <li>Full-text search, bookmarks, jump list navigation, and reading history</li>
+      <li>Image rendering, syntax-highlighted code blocks, and MathML support</li>
+      <li>Theme selection from a set of Base16 colour palettes with custom theme support</li>
+      <li>Adjustable margins and distraction-free zen mode</li>
+      <li>High-performance PDF rendering via the Kitty graphics protocol with SHM image transfer</li>
+    </ul>
+  </description>
+  <provides>
+    <binary>bookokrat</binary>
+  </provides>
+  <url type="homepage">https://bugzmanov.github.io/bookokrat/</url>
+  <url type="bugtracker">https://github.com/bugzmanov/bookokrat/issues</url>
+  <url type="vcs-browser">https://github.com/bugzmanov/bookokrat</url>
+  <categories>
+    <category>Utility</category>
+    <category>Office</category>
+    <category>Viewer</category>
+  </categories>
+  <keywords>
+    <keyword>epub</keyword>
+    <keyword>pdf</keyword>
+    <keyword>reader</keyword>
+    <keyword>tui</keyword>
+    <keyword>terminal</keyword>
+    <keyword>vim</keyword>
+    <keyword>ebook</keyword>
+  </keywords>
+  <developer id="io.github.bugzmanov">
+    <name>Rafael Bagmanov</name>
+  </developer>
+  <releases>
+    <release version="0.3.10" date="2026-05-06"/>
+  </releases>
+  <content_rating type="oars-1.1"/>
+</component>

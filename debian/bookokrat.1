@@ -1,0 +1,139 @@
+.TH BOOKOKRAT 1 "2026-05-06" "0.3.10" "User Commands"
+.SH NAME
+bookokrat \- terminal EPUB/PDF reader with Vim-style navigation
+.SH SYNOPSIS
+.B bookokrat
+[\fIFILE\fR]
+.SH DESCRIPTION
+.B bookokrat
+is a fast terminal UI reader for EPUB and PDF documents.
+It presents a split layout with a library/table-of-contents panel on the left
+and the document reader on the right.
+.PP
+When invoked without arguments bookokrat scans the current directory for
+EPUB and PDF files and opens the most recently read book automatically.
+Passing a file path on the command line opens that document directly.
+.SH OPTIONS
+.TP
+.BR \-h ", " \-\-help
+Print help information and exit.
+.TP
+.BR \-V ", " \-\-version
+Print version information and exit.
+.SH KEYBOARD SHORTCUTS
+.SS Global
+.TP
+.B q
+Quit the application.
+.TP
+.B ?
+Toggle the help popup (shows full key reference with ANSI art).
+.TP
+.B Tab
+Switch focus between the navigation panel and the content view.
+.TP
+.B Esc
+Close the current popup, cancel selection, or exit search mode.
+.SS Navigation panel
+.TP
+.B j / k
+Move down / up in the book list or table of contents.
+.TP
+.B b
+Toggle between book list and table of contents.
+.TP
+.B H / L
+Collapse / expand all table-of-contents entries.
+.TP
+.B Enter
+Select the highlighted book or chapter.
+.SS Reader
+.TP
+.B j / k
+Scroll down / up one line.
+.TP
+.B h / l
+Jump to the previous / next chapter.
+.TP
+.B Ctrl\-d / Ctrl\-u
+Scroll half a screen down / up with a visual highlight.
+.TP
+.B gg
+Jump to the top of the chapter (type g twice within one second).
+.TP
+.B G
+Jump to the bottom of the chapter.
+.TP
+.B Ctrl\-o / Ctrl\-i
+Navigate backward / forward through the jump list.
+.TP
+.B /
+Enter search mode.
+.TP
+.B n / N
+Jump to the next / previous search match.
+.TP
+.B a
+Add or edit an inline comment on the selected text.
+.TP
+.B d
+Delete the comment at the cursor position.
+.TP
+.B c
+Copy the current text selection to the clipboard.
+.SS Space-prefixed commands
+.TP
+.B Space h
+Toggle the reading history popup.
+.TP
+.B Space d
+Show book statistics (chapter and screen counts).
+.TP
+.B Space o
+Open the current book in the default system EPUB/PDF viewer.
+.TP
+.B Space s
+Toggle raw HTML view (EPUB only).
+.TP
+.B Space c
+Copy the entire chapter text (EPUB) or extract the page text (PDF).
+.TP
+.B Space f
+Reopen the last book-wide search.
+.TP
+.B Space F
+Start a new book-wide search.
+.SH FILES
+.TP
+.I bookmarks.json
+Reading position bookmarks stored in the directory where bookokrat is run.
+.TP
+.I .bookokrat_comments/
+Per-book annotation files in YAML format, stored alongside
+.IR bookmarks.json .
+.TP
+.I ~/.config/bookokrat/config.yaml
+Application settings (theme, margins, PDF options).
+.TP
+.I ~/.config/bookokrat/keybindings.yaml
+Optional keybinding overrides in neovim-compatible notation.
+.SH ENVIRONMENT
+.TP
+.B TERM, COLORTERM, TERM_PROGRAM
+Used to detect terminal capabilities and select the appropriate image
+rendering protocol (Kitty, Sixel, iTerm2, or halfblocks).
+.SH BUGS
+Report bugs at \fIhttps://github.com/bugzmanov/bookokrat/issues\fR.
+.SH AUTHOR
+Rafael Bagmanov <bugzmanov@gmail.com>.
+.PP
+This manual page was written by Vítězslav Dvořák <info@vitexsoftware.cz>
+for the Debian project (but may be used by others).
+.SH LICENSE
+GNU Affero General Public License v3 or later.
+See \fI/usr/share/common-licenses/AGPL-3\fR or
+\fIhttps://www.gnu.org/licenses/agpl-3.0.html\fR.
+.SH SEE ALSO
+.BR less (1),
+.BR zathura (1),
+.BR mupdf (1)

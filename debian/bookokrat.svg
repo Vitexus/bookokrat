@@ -1,0 +1,223 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <linearGradient id="wood" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#8B5E3C"/>
+      <stop offset="50%" stop-color="#A0713C"/>
+      <stop offset="100%" stop-color="#8B5E3C"/>
+    </linearGradient>
+    <linearGradient id="woodV" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#8B5E3C"/>
+      <stop offset="50%" stop-color="#A0713C"/>
+      <stop offset="100%" stop-color="#8B5E3C"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="256" height="256" fill="#1A1A2E"/>
+
+  <!-- === Sleeping Cat on top === -->
+  <!-- Cat body/head -->
+  <ellipse cx="148" cy="30" rx="22" ry="12" fill="#C0C0C0" stroke="#888" stroke-width="1"/>
+  <!-- Left ear -->
+  <polygon points="130,22 126,8 136,18" fill="#C0C0C0" stroke="#888" stroke-width="1"/>
+  <polygon points="132,20 129,12 136,18" fill="#FFB6C1"/>
+  <!-- Right ear -->
+  <polygon points="160,18 170,8 166,22" fill="#C0C0C0" stroke="#888" stroke-width="1"/>
+  <polygon points="161,18 167,12 164,20" fill="#FFB6C1"/>
+  <!-- Closed eyes -->
+  <path d="M140,28 Q143,32 146,28" fill="none" stroke="#333" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M152,28 Q155,32 158,28" fill="none" stroke="#333" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- Nose -->
+  <circle cx="149" cy="32" r="1.5" fill="#FFB6C1"/>
+  <!-- Whiskers -->
+  <line x1="149" y1="33" x2="138" y2="31" stroke="#888" stroke-width="0.7"/>
+  <line x1="149" y1="33" x2="137" y2="34" stroke="#888" stroke-width="0.7"/>
+  <line x1="149" y1="33" x2="160" y2="31" stroke="#888" stroke-width="0.7"/>
+  <line x1="149" y1="33" x2="161" y2="34" stroke="#888" stroke-width="0.7"/>
+  <!-- Tail curving out -->
+  <path d="M126,30 Q110,28 108,18 Q107,12 112,14" fill="none" stroke="#C0C0C0" stroke-width="3" stroke-linecap="round"/>
+  <!-- Z z z -->
+  <text x="172" y="14" font-family="monospace" font-size="14" font-weight="bold" fill="#6EC6FF" opacity="0.9">z</text>
+  <text x="182" y="8" font-family="monospace" font-size="10" font-weight="bold" fill="#6EC6FF" opacity="0.7">z</text>
+  <text x="189" y="3" font-family="monospace" font-size="7" font-weight="bold" fill="#6EC6FF" opacity="0.5">z</text>
+
+  <!-- === Bookshelf Frame === -->
+  <!-- Left side -->
+  <rect x="18" y="42" width="8" height="210" fill="url(#woodV)" rx="1"/>
+  <!-- Right side -->
+  <rect x="230" y="42" width="8" height="210" fill="url(#woodV)" rx="1"/>
+  <!-- Top -->
+  <rect x="16" y="42" width="224" height="6" fill="url(#wood)" rx="1"/>
+  <!-- Bottom -->
+  <rect x="16" y="246" width="224" height="8" fill="url(#wood)" rx="1"/>
+  <!-- Shelf 1 divider -->
+  <rect x="18" y="92" width="220" height="5" fill="url(#wood)"/>
+  <!-- Shelf 2 divider -->
+  <rect x="18" y="145" width="220" height="5" fill="url(#wood)"/>
+  <!-- Shelf 3 divider -->
+  <rect x="18" y="196" width="220" height="5" fill="url(#wood)"/>
+
+  <!-- ====== SHELF 1 (top) y=48..92 ====== -->
+  <!-- Red/magenta tall books (left) -->
+  <rect x="32" y="52" width="10" height="39" fill="#CC3333" rx="1"/>
+  <rect x="33" y="56" width="8" height="2" fill="#FF6666" opacity="0.6"/>
+  <rect x="33" y="62" width="8" height="2" fill="#FF6666" opacity="0.6"/>
+  <rect x="33" y="68" width="8" height="2" fill="#FF6666" opacity="0.6"/>
+
+  <rect x="46" y="54" width="10" height="37" fill="#CC3333" rx="1"/>
+  <rect x="47" y="58" width="8" height="2" fill="#FF6666" opacity="0.6"/>
+  <rect x="47" y="64" width="8" height="2" fill="#FF6666" opacity="0.6"/>
+
+  <!-- Cyan/white books (middle-left) -->
+  <rect x="68" y="50" width="8" height="41" fill="#00CED1" rx="1"/>
+  <rect x="69" y="55" width="6" height="1.5" fill="#FFF" opacity="0.5"/>
+  <rect x="69" y="60" width="6" height="1.5" fill="#FFF" opacity="0.5"/>
+  <rect x="69" y="65" width="6" height="1.5" fill="#FFF" opacity="0.5"/>
+
+  <rect x="79" y="53" width="7" height="38" fill="#00A5A5" rx="1"/>
+
+  <rect x="89" y="51" width="9" height="40" fill="#EEEEEE" rx="1"/>
+  <rect x="90" y="56" width="7" height="1.5" fill="#999"/>
+  <rect x="90" y="61" width="7" height="1.5" fill="#999"/>
+
+  <!-- White tall books (middle) -->
+  <rect x="108" y="52" width="8" height="39" fill="#E0E0E0" rx="1"/>
+  <rect x="120" y="50" width="10" height="41" fill="#F5F5F5" rx="1"/>
+  <rect x="121" y="55" width="8" height="2" fill="#BBB"/>
+  <rect x="121" y="60" width="8" height="2" fill="#BBB"/>
+
+  <!-- Small books -->
+  <rect x="136" y="60" width="7" height="31" fill="#00CED1" rx="1"/>
+  <rect x="146" y="56" width="8" height="35" fill="#E0E0E0" rx="1"/>
+
+  <!-- Red horizontal book/box (right) -->
+  <rect x="170" y="72" width="52" height="18" fill="#CC2222" rx="2"/>
+  <rect x="174" y="76" width="44" height="2" fill="#FF6666" opacity="0.4"/>
+  <rect x="174" y="82" width="44" height="2" fill="#FF6666" opacity="0.4"/>
+
+  <!-- ====== SHELF 2 (y=97..145) ====== -->
+  <!-- Cyan books left -->
+  <rect x="32" y="102" width="8" height="42" fill="#00CED1" rx="1"/>
+  <rect x="33" y="107" width="6" height="1.5" fill="#FFF" opacity="0.5"/>
+  <rect x="33" y="113" width="3" height="1.5" fill="#FFF" opacity="0.5"/>
+
+  <rect x="44" y="100" width="10" height="44" fill="#00CED1" rx="1"/>
+  <rect x="45" y="106" width="8" height="1.5" fill="#FFF" opacity="0.5"/>
+  <rect x="45" y="112" width="8" height="1.5" fill="#FFF" opacity="0.5"/>
+
+  <!-- Middle books -->
+  <rect x="64" y="101" width="8" height="43" fill="#00A5A5" rx="1"/>
+  <rect x="76" y="103" width="9" height="41" fill="#00CED1" rx="1"/>
+  <rect x="77" y="108" width="7" height="1.5" fill="#FFF" opacity="0.5"/>
+
+  <!-- Green "N" shaped books -->
+  <rect x="100" y="100" width="10" height="44" fill="#00CC66" rx="1"/>
+  <rect x="101" y="105" width="2" height="34" fill="#00FF88" opacity="0.5"/>
+  <rect x="107" y="105" width="2" height="34" fill="#00FF88" opacity="0.5"/>
+  <path d="M103,108 L107,132" stroke="#00FF88" stroke-width="1.5" opacity="0.5"/>
+
+  <rect x="116" y="102" width="10" height="42" fill="#00CC66" rx="1"/>
+  <rect x="117" y="107" width="2" height="32" fill="#00FF88" opacity="0.5"/>
+  <rect x="123" y="107" width="2" height="32" fill="#00FF88" opacity="0.5"/>
+  <path d="M119,110 L123,134" stroke="#00FF88" stroke-width="1.5" opacity="0.5"/>
+
+  <!-- Cyan/white books right section -->
+  <rect x="142" y="100" width="7" height="44" fill="#FFFFFF" rx="1"/>
+  <rect x="143" y="106" width="5" height="1.5" fill="#00CED1"/>
+  <rect x="143" y="112" width="5" height="1.5" fill="#00CED1"/>
+
+  <!-- ENI/ENT labeled books -->
+  <rect x="170" y="100" width="14" height="44" fill="#00CED1" rx="1"/>
+  <text x="172" y="118" font-family="monospace" font-size="7" fill="#FFF" font-weight="bold">ENI</text>
+
+  <rect x="188" y="101" width="14" height="43" fill="#00CC66" rx="1"/>
+  <text x="190" y="119" font-family="monospace" font-size="7" fill="#FFF" font-weight="bold">ENT</text>
+
+  <rect x="206" y="102" width="14" height="42" fill="#CC66CC" rx="1"/>
+  <text x="208" y="120" font-family="monospace" font-size="7" fill="#FFF" font-weight="bold">ENT</text>
+
+  <!-- ====== SHELF 3 (y=150..196) ====== -->
+  <!-- Left books -->
+  <rect x="32" y="155" width="8" height="40" fill="#00CED1" rx="1"/>
+  <rect x="44" y="153" width="10" height="42" fill="#00A5A5" rx="1"/>
+  <rect x="45" y="158" width="8" height="1.5" fill="#FFF" opacity="0.5"/>
+
+  <rect x="60" y="154" width="9" height="41" fill="#E0E0E0" rx="1"/>
+  <rect x="61" y="159" width="7" height="1.5" fill="#999"/>
+  <rect x="61" y="165" width="7" height="1.5" fill="#999"/>
+
+  <!-- Middle books -->
+  <rect x="78" y="152" width="8" height="43" fill="#00CED1" rx="1"/>
+  <rect x="90" y="155" width="10" height="40" fill="#CCCCCC" rx="1"/>
+  <rect x="91" y="160" width="8" height="1.5" fill="#888"/>
+  <rect x="91" y="166" width="8" height="1.5" fill="#888"/>
+
+  <rect x="106" y="153" width="8" height="42" fill="#CC66CC" rx="1"/>
+  <rect x="118" y="154" width="9" height="41" fill="#00CC66" rx="1"/>
+
+  <!-- Right section -->
+  <rect x="140" y="152" width="10" height="43" fill="#00CED1" rx="1"/>
+  <rect x="141" y="157" width="8" height="1.5" fill="#FFF" opacity="0.5"/>
+  <rect x="141" y="163" width="8" height="1.5" fill="#FFF" opacity="0.5"/>
+
+  <rect x="156" y="155" width="8" height="40" fill="#E0E0E0" rx="1"/>
+  <rect x="168" y="153" width="10" height="42" fill="#00A5A5" rx="1"/>
+
+  <!-- Hash/grid pattern book -->
+  <rect x="186" y="152" width="14" height="43" fill="#333" rx="1"/>
+  <rect x="188" y="157" width="10" height="1.5" fill="#00CC66" opacity="0.7"/>
+  <rect x="188" y="163" width="10" height="1.5" fill="#00CC66" opacity="0.7"/>
+  <rect x="188" y="169" width="10" height="1.5" fill="#00CC66" opacity="0.7"/>
+  <rect x="191" y="155" width="1.5" height="18" fill="#00CC66" opacity="0.7"/>
+  <rect x="195" y="155" width="1.5" height="18" fill="#00CC66" opacity="0.7"/>
+
+  <rect x="206" y="154" width="10" height="41" fill="#E0E0E0" rx="1"/>
+  <rect x="207" y="160" width="8" height="1.5" fill="#999"/>
+  <rect x="207" y="166" width="8" height="1.5" fill="#999"/>
+
+  <!-- ====== SHELF 4 (bottom, y=201..246) darker bg ====== -->
+  <rect x="26" y="201" width="212" height="45" fill="#111128" rx="0"/>
+
+  <!-- Magenta/pink books left -->
+  <rect x="32" y="205" width="8" height="39" fill="#CC44CC" rx="1"/>
+  <rect x="33" y="210" width="6" height="1.5" fill="#FF88FF" opacity="0.5"/>
+
+  <rect x="44" y="207" width="7" height="37" fill="#CC44CC" rx="1"/>
+  <rect x="48" y="207" width="3" height="37" fill="#FF88FF" opacity="0.3"/>
+
+  <rect x="55" y="206" width="8" height="38" fill="#9933CC" rx="1"/>
+
+  <!-- Cyan books middle -->
+  <rect x="78" y="205" width="9" height="39" fill="#00CED1" rx="1"/>
+  <rect x="79" y="210" width="7" height="2" fill="#FFF" opacity="0.5"/>
+  <rect x="79" y="216" width="7" height="2" fill="#FFF" opacity="0.5"/>
+
+  <rect x="91" y="207" width="8" height="37" fill="#00A5A5" rx="1"/>
+  <rect x="92" y="212" width="6" height="1.5" fill="#FFF" opacity="0.5"/>
+  <rect x="92" y="218" width="6" height="1.5" fill="#FFF" opacity="0.5"/>
+  <rect x="92" y="224" width="6" height="1.5" fill="#FFF" opacity="0.5"/>
+
+  <rect x="103" y="206" width="8" height="38" fill="#00CED1" rx="1"/>
+  <rect x="104" y="211" width="6" height="1.5" fill="#FFF" opacity="0.5"/>
+
+  <!-- Green/white books right -->
+  <rect x="128" y="205" width="10" height="39" fill="#00CC66" rx="1"/>
+  <rect x="129" y="210" width="8" height="1.5" fill="#FFF" opacity="0.5"/>
+  <rect x="129" y="216" width="4" height="1.5" fill="#FFF" opacity="0.5"/>
+  <rect x="135" y="216" width="2" height="18" fill="#FFF" opacity="0.3"/>
+
+  <rect x="144" y="207" width="10" height="37" fill="#333" rx="1"/>
+  <rect x="146" y="212" width="6" height="1.5" fill="#00CC66" opacity="0.7"/>
+  <rect x="146" y="218" width="6" height="1.5" fill="#00CC66" opacity="0.7"/>
+  <rect x="149" y="210" width="1.5" height="12" fill="#00CC66" opacity="0.7"/>
+
+  <!-- Tall books far right -->
+  <rect x="164" y="205" width="8" height="39" fill="#CCCCCC" rx="1"/>
+  <rect x="176" y="206" width="10" height="38" fill="#00CED1" rx="1"/>
+  <rect x="177" y="211" width="8" height="1.5" fill="#FFF" opacity="0.5"/>
+
+  <rect x="192" y="205" width="8" height="39" fill="#E0E0E0" rx="1"/>
+  <rect x="204" y="207" width="10" height="37" fill="#00CED1" rx="1"/>
+  <rect x="205" y="212" width="8" height="1.5" fill="#FFF" opacity="0.5"/>
+  <rect x="205" y="218" width="8" height="1.5" fill="#FFF" opacity="0.5"/>
+</svg>

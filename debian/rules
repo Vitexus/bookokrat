@@ -1,0 +1,18 @@
+#!/usr/bin/make -f
+export DH_VERBOSE = 1
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+
+%:
+	dh $@
+
+override_dh_auto_build:
+	cargo build --release --locked
+
+override_dh_auto_test:
+	true
+
+override_dh_auto_install:
+	# intentionally empty — dh_install uses debian/bookokrat.install
+
+override_dh_auto_clean:
+	cargo clean || true

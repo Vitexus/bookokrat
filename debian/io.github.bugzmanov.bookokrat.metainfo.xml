@@ -23,6 +23,7 @@
       <li>High-performance PDF rendering via the Kitty graphics protocol with SHM image transfer</li>
     </ul>
   </description>
+  <icon type="stock">bookokrat</icon>
   <provides>
     <binary>bookokrat</binary>
   </provides>

@@ -62,6 +62,7 @@ pub enum Action {
 
     // === Content operations ===
     AddComment,
+    OpenHighlightPalette,
     DeleteComment,
     CopySelection,
     CopyChapterText,
@@ -91,6 +92,11 @@ pub enum Action {
     JumpForward,
     JumpBackward,
 
+    // === Marks ===
+    SetMark,
+    GotoMark,
+    ToggleMarksList,
+
     // === Display ===
     ToggleProfiling,
     ToggleRawHtml,
@@ -103,6 +109,7 @@ pub enum Action {
     ZoomOut,
     ZoomReset,
     ZoomFitWidth,
+    ZoomEnhance,
     PanLeft,
     PanRight,
     GoToPage,
@@ -195,6 +202,7 @@ impl Action {
         Action::ExpandNavPanel,
         Action::ResetNavPanelWidth,
         Action::AddComment,
+        Action::OpenHighlightPalette,
         Action::DeleteComment,
         Action::CopySelection,
         Action::CopyChapterText,
@@ -219,6 +227,9 @@ impl Action {
         Action::FirstNonBlank,
         Action::JumpForward,
         Action::JumpBackward,
+        Action::SetMark,
+        Action::GotoMark,
+        Action::ToggleMarksList,
         Action::ToggleProfiling,
         Action::ToggleRawHtml,
         Action::ToggleJustifyText,
@@ -228,6 +239,7 @@ impl Action {
         Action::ZoomOut,
         Action::ZoomReset,
         Action::ZoomFitWidth,
+        Action::ZoomEnhance,
         Action::PanLeft,
         Action::PanRight,
         Action::GoToPage,
@@ -323,6 +335,7 @@ impl Action {
 
             // Content operations
             AddComment => "Add or edit a comment on the selection",
+            OpenHighlightPalette => "Open the visual selection highlight palette",
             DeleteComment => "Delete the comment under the cursor",
             CopySelection => "Copy the current selection to the clipboard",
             CopyChapterText => "Copy chapter text (EPUB) / page text (PDF)",
@@ -352,6 +365,11 @@ impl Action {
             JumpForward => "Jump forward in the navigation history",
             JumpBackward => "Jump backward in the navigation history",
 
+            // Marks
+            SetMark => "Set a mark at the current position (next key picks the mark name)",
+            GotoMark => "Jump to a previously set mark (next key picks the mark name)",
+            ToggleMarksList => "Open the marks list popup",
+
             // Display
             ToggleProfiling => "Toggle the performance profiler overlay",
             ToggleRawHtml => "Toggle raw HTML view (EPUB)",
@@ -364,6 +382,7 @@ impl Action {
             ZoomOut => "Zoom out (PDF)",
             ZoomReset => "Reset zoom / fit-to-height (PDF)",
             ZoomFitWidth => "Fit page width (PDF)",
+            ZoomEnhance => "Enhance current Kitty PDF zoom render",
             PanLeft => "Pan the page left (PDF)",
             PanRight => "Pan the page right (PDF)",
             GoToPage => "Jump to a specific page number (PDF)",
@@ -466,7 +485,7 @@ mod tests {
                 OpenBookSearch | OpenBookSearchFresh | OpenSettings | OpenThemeSelector
                 | OpenExternalViewer => a,
                 ShrinkNavPanel | ExpandNavPanel | ResetNavPanelWidth => a,
-                AddComment | DeleteComment => a,
+                AddComment | OpenHighlightPalette | DeleteComment => a,
                 CopySelection | CopyChapterText | CopyTocItem => a,
                 LookupSelection | FollowLink => a,
                 ToggleNormalMode | EnterVisualMode | EnterVisualLineMode | StartYank => a,
@@ -474,9 +493,10 @@ mod tests {
                 | RepeatFindReverse => a,
                 WordForward | WordBackward | WordEnd | LineStart | LineEnd | FirstNonBlank => a,
                 JumpForward | JumpBackward => a,
+                SetMark | GotoMark | ToggleMarksList => a,
                 ToggleProfiling | ToggleRawHtml | ToggleJustifyText | IncreaseMargin
                 | DecreaseMargin => a,
-                ZoomIn | ZoomOut | ZoomReset | ZoomFitWidth | PanLeft | PanRight => a,
+                ZoomIn | ZoomOut | ZoomReset | ZoomFitWidth | ZoomEnhance | PanLeft | PanRight => a,
                 GoToPage | ToggleInvertImages | TogglePdfTheming | TogglePdfWatching => a,
                 TogglePdfPageLayout | TogglePdfRenderMode | DumpDebugState | SynctexInverse => a,
                 ScrollDown | ScrollUp => a,

@@ -16,8 +16,8 @@ use crate::inputs::{KeySeq, MouseTracker};
 use crate::jump_list::JumpList;
 use crate::notification::NotificationManager;
 use crate::pdf::{
-    CursorRect, ExtractionRequest, NormalModeState, PageNumberTracker, SelectionRect,
-    TextSelection, TocEntry, ViewportUpdate, VisualRect, Zoom,
+    CursorRect, ExtractionRequest, HighlightOverlay, NormalModeState, PageNumberTracker,
+    SelectionRect, TextSelection, TocEntry, ViewportUpdate, VisualRect, Zoom,
 };
 use crate::theme::{Base16Palette, theme_background};
 use crate::widget::hud_message::{HudMessage, HudMode};
@@ -102,12 +102,39 @@ pub struct PageSearchMatch {
     pub length: usize,
 }
 
+/// What to highlight on a page. Two flavors exist because the *locator* to
+/// recompute rects on each rerender is fundamentally different:
+///
+/// - `Query` — substring search; rects are the matches of `query`. Optional
+///   `line_index` / `line_y_bounds` disambiguate which match is the "active"
+///   one when there are multiple matches per page.
+/// - `Line` — a specific logical line in `line_bounds`. The whole line is
+///   highlighted; no text matching needed.
 #[derive(Clone, Debug)]
-pub struct ActiveSearchHighlight {
+pub enum HighlightLocator {
+    Query {
+        query: String,
+        line_index: Option<usize>,
+        line_y_bounds: Option<(f32, f32)>,
+    },
+    Line {
+        line_idx: usize,
+    },
+}
+
+/// A pending highlight to be rendered on a PDF page. Replaces the older
+/// `ActiveSearchHighlight` and `MarkJumpHighlight` types — both shared the
+/// same one-per-page lifecycle and the same `UpdateSelection` channel, so
+/// they're collapsed into a single field.
+///
+/// `expires_at = None` means persistent (used by search; cleared when the
+/// user dismisses or starts a new search). `Some(_)` means transient (used
+/// by mark jumps; the App tick clears it after the deadline).
+#[derive(Clone, Debug)]
+pub struct PendingHighlight {
     pub page: usize,
-    pub query: String,
-    pub line_index: Option<usize>,
-    pub line_y_bounds: Option<(f32, f32)>,
+    pub locator: HighlightLocator,
+    pub expires_at: Option<std::time::Instant>,
 }
 
 /// Page search state for vim-style / search in normal mode
@@ -208,6 +235,7 @@ pub enum InputAction {
         rects: Vec<SelectionRect>,
         cursor_rect: Option<CursorRect>,
     },
+    HighlightSaved(Vec<HighlightOverlay>),
     CommentDeleted {
         rects: Vec<SelectionRect>,
         selection_rects: Vec<SelectionRect>,
@@ -228,6 +256,8 @@ pub enum InputAction {
         file: String,
         line: u32,
     },
+    SetMarkPending,
+    GotoMarkPending,
 }
 
 /// Separator height between pages in continuous scroll
@@ -259,6 +289,21 @@ pub(crate) struct NonKittyDualLayout {
     pub right_slice: Option<NonKittyDualSlice>,
 }
 
+/// State captured before an enhanced Kitty render arrives.
+pub struct PendingEnhance {
+    pub target_page: usize,
+    pub effective_zoom: f32,
+    pub old_display_factor: f32,
+    pub old_rendered_scale: f32,
+    pub old_scroll_offset: u32,
+    pub old_viewport_start: u32,
+    pub old_pan_from_left: u16,
+    pub old_cell_size: Option<crate::pdf::CellSize>,
+    pub old_pixel_w: Option<u32>,
+    pub old_pixel_h: Option<u32>,
+    pub old_right_cell_w: Option<u16>,
+}
+
 /// Main PDF reader widget state
 pub struct PdfReaderState {
     /// Document name
@@ -277,6 +322,9 @@ pub struct PdfReaderState {
     pub is_kitty: bool,
     /// Zoom state (only for Kitty terminals)
     pub zoom: Option<Zoom>,
+    /// User-visible Kitty zoom. `zoom.factor` is display-side scale for the
+    /// current rendered bitmap, so this stays stable across re-renders.
+    pub kitty_effective_zoom_factor: f32,
     /// Color palette
     pub palette: Base16Palette,
     /// Theme index in palette list
@@ -327,6 +375,8 @@ pub struct PdfReaderState {
     pub comments_doc_id: String,
     /// Comment input state
     pub comment_input: CommentInputState,
+    /// Floating color palette for visual-mode highlight creation.
+    pub highlight_palette_active: bool,
     /// When set, a solid-color Kitty image is placed over this area after PDF
     /// images so active PDF modals have an opaque background. (col, row, width, height)
     pub modal_overlay_rect: Option<(u16, u16, u16, u16)>,
@@ -335,6 +385,8 @@ pub struct PdfReaderState {
     pub modal_overlay_sent: Option<(u16, u16, u16, u16)>,
     /// Comment selection rectangles for overlay rendering
     pub comment_rects: Vec<SelectionRect>,
+    /// Highlight rectangles for overlay rendering
+    pub highlight_overlays: Vec<HighlightOverlay>,
     /// Whether comment navigation is active
     pub comment_nav_active: bool,
     /// Current page for comment navigation
@@ -360,9 +412,10 @@ pub struct PdfReaderState {
     pub kitty_visible_pages: HashSet<usize>,
     /// Whether Kitty delete-by-range is safe on this terminal
     pub kitty_delete_range_supported: bool,
-    /// Active PDF/DJVU search highlight to (re)apply when page data arrives
-    /// or rerenders after a geometry change.
-    pub pending_search_highlight: Option<ActiveSearchHighlight>,
+    /// Pending overlay highlight (search match or mark-jump line). Re-applied
+    /// when page data arrives or rerenders after geometry changes. See
+    /// `HighlightLocator` for the two flavors.
+    pub pending_highlight: Option<PendingHighlight>,
     /// Transient HUD message for the bottom title area
     pub hud_message: Option<HudMessage>,
     /// Page search state for vim-style / search in normal mode
@@ -373,6 +426,8 @@ pub struct PdfReaderState {
     pub quick_page_jump: Option<QuickPageJump>,
     /// SyncTeX scanner for LaTeX source ↔ PDF position mapping
     pub synctex_scanner: Option<std::sync::Arc<crate::pdf::synctex::SyncTexScanner>>,
+    /// Pending Kitty zoom enhancement waiting for the converted frame.
+    pub pending_enhance: Option<PendingEnhance>,
 }
 
 impl PdfReaderState {
@@ -413,6 +468,7 @@ impl PdfReaderState {
             rendered: vec![],
             is_kitty,
             zoom,
+            kitty_effective_zoom_factor: if is_kitty { zoom_factor } else { 1.0 },
             palette,
             theme_index,
             selection: TextSelection::new(),
@@ -438,9 +494,11 @@ impl PdfReaderState {
             book_comments,
             comments_doc_id,
             comment_input: CommentInputState::default(),
+            highlight_palette_active: false,
             modal_overlay_rect: None,
             modal_overlay_sent: None,
             comment_rects: Vec::new(),
+            highlight_overlays: Vec::new(),
             comment_nav_active: false,
             comment_nav_page: 0,
             comment_nav_index: 0,
@@ -456,12 +514,13 @@ impl PdfReaderState {
             last_kitty_cache_window: None,
             kitty_visible_pages: HashSet::new(),
             kitty_delete_range_supported: false,
-            pending_search_highlight: None,
+            pending_highlight: None,
             hud_message: None,
             page_search: PageSearchState::default(),
             watching: false,
             quick_page_jump: None,
             synctex_scanner: None,
+            pending_enhance: None,
         }
     }
 
@@ -515,6 +574,81 @@ impl PdfReaderState {
         self.hud_message = Some(HudMessage::new(message, duration, mode));
     }
 
+    /// Persistent search-style highlight; recomputed on each rerender via
+    /// substring matching of `query` against page text.
+    pub fn set_search_highlight(
+        &mut self,
+        page: usize,
+        query: String,
+        line_index: Option<usize>,
+        line_y_bounds: Option<(f32, f32)>,
+    ) {
+        self.pending_highlight = Some(PendingHighlight {
+            page,
+            locator: HighlightLocator::Query {
+                query,
+                line_index,
+                line_y_bounds,
+            },
+            expires_at: None,
+        });
+    }
+
+    /// Brief line-level highlight after a mark jump. Cleared by the App tick
+    /// once `duration` has passed.
+    pub fn start_mark_jump_highlight(&mut self, page: usize, line_idx: usize, duration: Duration) {
+        self.pending_highlight = Some(PendingHighlight {
+            page,
+            locator: HighlightLocator::Line { line_idx },
+            expires_at: Some(std::time::Instant::now() + duration),
+        });
+    }
+
+    pub fn clear_pending_highlight(&mut self) {
+        self.pending_highlight = None;
+    }
+
+    /// Clear the highlight if its expiry has passed. Returns `true` when the
+    /// state changed (caller should send empty `UpdateSelection` and force a
+    /// redraw). Persistent highlights (no expiry) are never auto-cleared.
+    pub fn tick_pending_highlight(&mut self) -> bool {
+        let expired = self.pending_highlight.as_ref().is_some_and(|h| {
+            h.expires_at
+                .is_some_and(|deadline| std::time::Instant::now() >= deadline)
+        });
+        if expired {
+            self.pending_highlight = None;
+            return true;
+        }
+        false
+    }
+
+    /// Build selection rects for the active pending highlight. Empty if
+    /// nothing is pending or the line bounds aren't available yet.
+    pub fn pending_highlight_rects(&self) -> Vec<crate::pdf::SelectionRect> {
+        let Some(h) = self.pending_highlight.as_ref() else {
+            return Vec::new();
+        };
+        match &h.locator {
+            HighlightLocator::Line { line_idx } => {
+                let Some(info) = self.rendered.get(h.page) else {
+                    return Vec::new();
+                };
+                let Some(line) = info.line_bounds.get(*line_idx) else {
+                    return Vec::new();
+                };
+                vec![crate::pdf::SelectionRect {
+                    page: h.page,
+                    topleft_x: line.x0 as u32,
+                    topleft_y: line.y0 as u32,
+                    bottomright_x: line.x1 as u32,
+                    bottomright_y: line.y1 as u32,
+                }]
+            }
+            HighlightLocator::Query { .. } => self.find_query_highlight_rects(h),
+        }
+    }
+
     pub(crate) fn pdf_rendering_status(&self) -> String {
         let rendering = if self.themed_rendering {
             "themed"
@@ -558,7 +692,7 @@ impl PdfReaderState {
         let mut invalidated = Vec::new();
         for (i, info) in self.rendered.iter_mut().enumerate() {
             if info.img.is_some() {
-                info.img = None;
+                info.clear_image();
                 invalidated.push(i);
             }
         }
@@ -613,7 +747,8 @@ impl PdfReaderState {
             return false;
         };
         if let Some(requested_scale) = info.requested_scale
-            && (requested_scale - self.non_kitty_zoom_factor).abs() > 0.0001
+            && (requested_scale - self.non_kitty_zoom_factor).abs()
+                > crate::pdf::Zoom::SCALE_ROUNDTRIP_EPS
         {
             return false;
         }

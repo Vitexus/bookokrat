@@ -27,7 +27,7 @@ use crate::vendored::ratatui_image::{
 
 use super::kittyv2::ImageId;
 use super::normal_mode::{CursorRect, VisualRect};
-use super::selection::SelectionRect;
+use super::selection::{HighlightOverlay, SelectionRect};
 use super::types::{PageData, VecExt as _, ViewportUpdate};
 
 type PipelineError = super::request::WorkerFault;
@@ -220,6 +220,7 @@ impl ConvertedImage {
 
 pub struct RenderedFrame {
     pub index: usize,
+    pub requested_scale: f32,
     pub image: ConvertedImage,
 }
 
@@ -263,6 +264,7 @@ impl PixelRect {
 
 #[derive(Default, Clone)]
 struct OverlaySet {
+    highlights: Vec<HighlightPixelRect>,
     comments: Vec<PixelRect>,
     /// When true, `comments` contains pre-computed underline coordinates (for tile rendering).
     /// When false, `comments` contains selection rects and underline position is calculated.
@@ -275,6 +277,7 @@ struct OverlaySet {
 impl OverlaySet {
     fn is_empty(&self) -> bool {
         self.comments.is_empty()
+            && self.highlights.is_empty()
             && self.selection.is_empty()
             && self.visual.is_empty()
             && self.cursor.is_none()
@@ -327,6 +330,28 @@ impl OverlaySet {
                 .collect()
         };
 
+        let clip_highlights = |rects: &[HighlightPixelRect]| -> Vec<HighlightPixelRect> {
+            rects
+                .iter()
+                .filter(|highlight| {
+                    !(highlight.rect.x1 <= tile_x || highlight.rect.x0 >= tile_x_end)
+                })
+                .filter(|highlight| highlight.rect.intersects_y(tile_y, tile_end))
+                .filter_map(|highlight| {
+                    let local_x0 = highlight.rect.x0.saturating_sub(tile_x);
+                    let local_x1 = highlight.rect.x1.saturating_sub(tile_x).min(tile_width);
+                    let local = highlight.rect.offset_y(tile_y);
+                    PixelRect::new(local_x0, local.y0, local_x1, local.y1.min(tile_height)).map(
+                        |rect| HighlightPixelRect {
+                            rect,
+                            rgb: highlight.rgb,
+                            alpha: highlight.alpha,
+                        },
+                    )
+                })
+                .collect()
+        };
+
         let cursor = self.cursor.and_then(|rect| {
             if rect.intersects_y(tile_y, tile_end) && !(rect.x1 <= tile_x || rect.x0 >= tile_x_end)
             {
@@ -342,6 +367,7 @@ impl OverlaySet {
         });
 
         Self {
+            highlights: clip_highlights(&self.highlights),
             comments: clip_comments(&self.comments),
             comments_are_underlines: true, // Tile rendering pre-computes underline positions
             selection: clip(&self.selection),
@@ -349,6 +375,13 @@ impl OverlaySet {
             cursor,
         }
     }
+}
+
+#[derive(Clone)]
+struct HighlightPixelRect {
+    rect: PixelRect,
+    rgb: crate::annotations::RgbColor,
+    alpha: u8,
 }
 
 struct CachedPage {
@@ -365,6 +398,7 @@ pub enum ConversionCommand {
     UpdateDualViewport(Vec<ViewportUpdate>),
     UpdateSelection(Vec<SelectionRect>),
     UpdateComments(Vec<SelectionRect>),
+    UpdateHighlights(Vec<HighlightOverlay>),
     UpdateCursor(Option<CursorRect>),
     UpdateVisual(Vec<VisualRect>),
     InvalidatePageCache,
@@ -384,6 +418,7 @@ struct ConverterEngine {
     page_cache: Vec<Option<CachedPage>>,
     selection_rects: Vec<SelectionRect>,
     comment_rects: Vec<SelectionRect>,
+    highlight_overlays: Vec<HighlightOverlay>,
     comment_cache: HashMap<usize, CommentCacheEntry>,
     visual_rects: Vec<VisualRect>,
     cursor_rect: Option<CursorRect>,
@@ -442,6 +477,7 @@ impl ConverterEngine {
                             self.sent_for_viewport.insert(new_viewport.page);
                             sender.send(Ok(RenderedFrame {
                                 index: new_viewport.page,
+                                requested_scale: cached.data.requested_scale,
                                 image: img,
                             }))?;
                         }
@@ -491,6 +527,7 @@ impl ConverterEngine {
 
                     sender.send(Ok(RenderedFrame {
                         index: new_viewport.page,
+                        requested_scale: cached.data.requested_scale,
                         image: img,
                     }))?;
                 }
@@ -514,6 +551,7 @@ impl ConverterEngine {
             page_cache: Vec::new(),
             selection_rects: Vec::new(),
             comment_rects: Vec::new(),
+            highlight_overlays: Vec::new(),
             comment_cache: HashMap::new(),
             visual_rects: Vec::new(),
             cursor_rect: None,
@@ -577,6 +615,7 @@ impl ConverterEngine {
 
             return Ok(Some(RenderedFrame {
                 index: page_info.page_num,
+                requested_scale: page_info.requested_scale,
                 image: img,
             }));
         }
@@ -758,6 +797,13 @@ impl ConverterEngine {
                 self.invalidate_tiles_for_pages(&affected);
                 self.reconvert_pages(&affected, sender)?;
             }
+            ConversionCommand::UpdateHighlights(new_overlays) => {
+                let old = std::mem::take(&mut self.highlight_overlays);
+                let affected = Self::collect_affected_pages(&old, &new_overlays);
+                self.highlight_overlays = new_overlays;
+                self.invalidate_tiles_for_pages(&affected);
+                self.reconvert_pages(&affected, sender)?;
+            }
             ConversionCommand::UpdateCursor(new_cursor) => {
                 log::trace!(
                     "Converter: UpdateCursor page={:?}",
@@ -878,6 +924,7 @@ impl ConverterEngine {
                                     self.sent_for_viewport.insert(*page_num);
                                     sender.send(Ok(RenderedFrame {
                                         index: *page_num,
+                                        requested_scale: cached.data.requested_scale,
                                         image: img,
                                     }))?;
                                 }
@@ -908,6 +955,7 @@ impl ConverterEngine {
                     self.sent_for_viewport.insert(*page_num);
                     sender.send(Ok(RenderedFrame {
                         index: *page_num,
+                        requested_scale: cached.data.requested_scale,
                         image: img,
                     }))?;
                 }
@@ -984,6 +1032,7 @@ impl ConverterEngine {
                     self.sent_for_viewport.insert(page_num);
                     sender.send(Ok(RenderedFrame {
                         index: page_num,
+                        requested_scale: cached.data.requested_scale,
                         image: img,
                     }))?;
                 }
@@ -1071,6 +1120,7 @@ impl ConverterEngine {
                 );
                 sender.send(Ok(RenderedFrame {
                     index: page_num,
+                    requested_scale: cached.data.requested_scale,
                     image: ConvertedImage::TileUpdate { tiles, cell_size },
                 }))?;
             }
@@ -1103,6 +1153,7 @@ impl ConverterEngine {
                             Ok(img) => {
                                 sender.send(Ok(RenderedFrame {
                                     index: page_num,
+                                    requested_scale: cached.data.requested_scale,
                                     image: img,
                                 }))?;
                                 self.tiled_pages.insert(page_num);
@@ -1180,6 +1231,7 @@ impl ConverterEngine {
                     self.sent_for_viewport.insert(page_num);
                     sender.send(Ok(RenderedFrame {
                         index: page_num,
+                        requested_scale: cached.data.requested_scale,
                         image: img,
                     }))?;
                 }
@@ -1278,6 +1330,7 @@ impl ConverterEngine {
                 );
                 sender.send(Ok(RenderedFrame {
                     index: page_num,
+                    requested_scale: cached.data.requested_scale,
                     image: ConvertedImage::TileUpdate { tiles, cell_size },
                 }))?;
             }
@@ -1341,6 +1394,30 @@ impl ConverterEngine {
             }
         } else {
             log::debug!("get_page_overlays: page={page_num} - no page cache or no comments");
+        }
+
+        for highlight in &self.highlight_overlays {
+            if highlight.rect.page != page_num {
+                continue;
+            }
+            let scale = self
+                .page_cache
+                .get(page_num)
+                .and_then(|cached| cached.as_ref())
+                .map(|cached| f64::from(cached.data.scale_factor))
+                .unwrap_or(1.0);
+            if let Some(rect) = PixelRect::new(
+                (f64::from(highlight.rect.topleft_x) * scale).round() as u32,
+                (f64::from(highlight.rect.topleft_y) * scale).round() as u32,
+                (f64::from(highlight.rect.bottomright_x) * scale).round() as u32,
+                (f64::from(highlight.rect.bottomright_y) * scale).round() as u32,
+            ) {
+                overlays.highlights.push(HighlightPixelRect {
+                    rect,
+                    rgb: highlight.rgb,
+                    alpha: highlight.alpha,
+                });
+            }
         }
 
         for sel in &self.selection_rects {
@@ -1560,6 +1637,12 @@ trait PageScoped {
 impl PageScoped for SelectionRect {
     fn page(&self) -> usize {
         self.page
+    }
+}
+
+impl PageScoped for HighlightOverlay {
+    fn page(&self) -> usize {
+        self.rect.page
     }
 }
 
@@ -2105,6 +2188,7 @@ fn encode_protocol(
 }
 
 fn apply_overlays(img: &mut RgbImage, overlays: &OverlaySet) {
+    apply_highlight_rects(img, &overlays.highlights);
     if overlays.comments_are_underlines {
         // Comments are already in underline coordinates (tile rendering)
         draw_underline_rects_direct(img, &overlays.comments);
@@ -2117,6 +2201,45 @@ fn apply_overlays(img: &mut RgbImage, overlays: &OverlaySet) {
     if let Some(cursor) = overlays.cursor {
         apply_rects_op(img, std::slice::from_ref(&cursor), OverlayOp::Cursor);
     }
+}
+
+fn apply_highlight_rects(img: &mut RgbImage, rects: &[HighlightPixelRect]) {
+    if rects.is_empty() {
+        return;
+    }
+    let width = img.width() as usize;
+    let height = img.height() as usize;
+    let stride = width * 3;
+    let buf = img.as_mut();
+
+    for highlight in rects {
+        let Some(clamped) = highlight.rect.clamp_to(width as u32, height as u32) else {
+            continue;
+        };
+        if clamped.y1 <= clamped.y0 || clamped.x1 <= clamped.x0 {
+            continue;
+        }
+        let alpha = u16::from(highlight.alpha);
+        let inv_alpha = 255u16.saturating_sub(alpha);
+        for y in clamped.y0..clamped.y1 {
+            let row_start = y as usize * stride;
+            for x in clamped.x0..clamped.x1 {
+                let px_start = row_start + x as usize * 3;
+                if px_start + 2 >= buf.len() {
+                    continue;
+                }
+                buf[px_start] = blend_channel(buf[px_start], highlight.rgb.r, alpha, inv_alpha);
+                buf[px_start + 1] =
+                    blend_channel(buf[px_start + 1], highlight.rgb.g, alpha, inv_alpha);
+                buf[px_start + 2] =
+                    blend_channel(buf[px_start + 2], highlight.rgb.b, alpha, inv_alpha);
+            }
+        }
+    }
+}
+
+fn blend_channel(base: u8, overlay: u8, alpha: u16, inv_alpha: u16) -> u8 {
+    (((u16::from(base) * inv_alpha) + (u16::from(overlay) * alpha)) / 255) as u8
 }
 
 fn apply_overlays_dynamic(img: &mut DynamicImage, overlays: &OverlaySet) {

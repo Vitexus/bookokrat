@@ -1,4 +1,5 @@
 // Export modules for use in tests
+pub mod annotations;
 pub mod book_manager;
 pub mod bookmarks;
 pub mod clipboard;
@@ -18,6 +19,7 @@ pub mod keybindings;
 pub mod library;
 pub mod main_app;
 pub mod markdown;
+pub mod marks;
 pub mod notification;
 pub mod widget;
 pub use components::mathml_renderer;

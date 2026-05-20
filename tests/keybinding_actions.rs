@@ -12,6 +12,7 @@ use bookokrat::settings::set_margin;
 use bookokrat::theme::set_theme_by_index;
 use bookokrat::{App, FocusedPanel, MainPanel, PopupWindow};
 use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifiers};
+use serial_test::serial;
 use std::collections::HashSet;
 use tempfile::TempDir;
 
@@ -100,16 +101,25 @@ macro_rules! binding_tests {
     ($(
         $test_name:ident : $ctx:expr, $notation:expr,
         setup = |$app:ident, $dir:ident| $setup:expr,
+        $(after = |$after_app:ident| $after:expr,)?
         check = |$app2:ident| $check:expr
     );* $(;)?) => {
         $(
             #[test]
+            #[serial]
             fn $test_name() {
                 let ($app, $dir) = create_app();
                 let mut $app = $app;
                 $setup;
                 simulate(&mut $app, $notation);
+                $(
+                    {
+                        let $after_app = &mut $app;
+                        $after;
+                    }
+                )?
                 let $app2 = &$app;
+                let _ = &$app2;
                 assert!($check,
                     "binding check failed: {} {}",
                     stringify!($test_name), $notation
@@ -156,7 +166,7 @@ binding_tests! {
         check = |app| {
             app.system_command_executor.as_any()
                 .downcast_ref::<bookokrat::system_command::MockSystemCommandExecutor>()
-                .map_or(false, |m| !m.get_executed_commands().is_empty())
+                .is_some_and(|m| !m.get_executed_commands().is_empty())
         };
     global_space_c: KeyContext::Global, "<Space>c",
         setup = |app, _dir| { open_book(&mut app); app.focused_panel = FocusedPanel::Main(MainPanel::Content); },
@@ -425,6 +435,18 @@ binding_tests! {
     content_ctrl_o: KeyContext::EpubContent, "<C-o>",
         setup = |app, _dir| { open_book(&mut app); app.focused_panel = FocusedPanel::Main(MainPanel::Content); },
         check = |app| matches!(app.focused_panel, FocusedPanel::Main(MainPanel::Content));
+    content_m: KeyContext::EpubContent, "m",
+        setup = |app, _dir| { open_book(&mut app); app.focused_panel = FocusedPanel::Main(MainPanel::Content); },
+        after = |app| { press_char(app, 'a'); },
+        check = |app| app.has_notification();
+    content_grave: KeyContext::EpubContent, "`",
+        setup = |app, _dir| { open_book(&mut app); app.focused_panel = FocusedPanel::Main(MainPanel::Content); },
+        after = |app| { press_char(app, 'a'); },
+        check = |app| app.has_notification();
+    content_apostrophe: KeyContext::EpubContent, "'",
+        setup = |app, _dir| { open_book(&mut app); app.focused_panel = FocusedPanel::Main(MainPanel::Content); },
+        after = |app| { press_char(app, 'a'); },
+        check = |app| app.has_notification();
     content_p: KeyContext::EpubContent, "p",
         setup = |app, _dir| { open_book(&mut app); app.focused_panel = FocusedPanel::Main(MainPanel::Content); },
         check = |app| !app.is_profiling(); // profile feature disabled in tests
@@ -560,6 +582,21 @@ binding_tests! {
     epub_normal_y: KeyContext::EpubNormal, "y",
         setup = |app, _dir| { open_book(&mut app); app.focused_panel = FocusedPanel::Main(MainPanel::Content); simulate(&mut app, "n"); },
         check = |app| app.is_normal_mode(); // starts yank pending
+    epub_normal_m: KeyContext::EpubNormal, "m",
+        setup = |app, _dir| { open_book(&mut app); app.focused_panel = FocusedPanel::Main(MainPanel::Content); simulate(&mut app, "n"); },
+        after = |app| { press_char(app, 'a'); },
+        check = |app| app.has_notification();
+    epub_normal_grave: KeyContext::EpubNormal, "`",
+        setup = |app, _dir| { open_book(&mut app); app.focused_panel = FocusedPanel::Main(MainPanel::Content); simulate(&mut app, "n"); },
+        after = |app| { press_char(app, 'a'); },
+        check = |app| app.has_notification();
+    epub_normal_apostrophe: KeyContext::EpubNormal, "'",
+        setup = |app, _dir| { open_book(&mut app); app.focused_panel = FocusedPanel::Main(MainPanel::Content); simulate(&mut app, "n"); },
+        after = |app| { press_char(app, 'a'); },
+        check = |app| app.has_notification();
+    epub_normal_h_upper: KeyContext::EpubNormal, "H",
+        setup = |app, _dir| { open_book(&mut app); app.focused_panel = FocusedPanel::Main(MainPanel::Content); simulate(&mut app, "n"); simulate(&mut app, "v"); },
+        check = |app| app.is_highlight_palette_active();
     epub_normal_n: KeyContext::EpubNormal, "n",
         setup = |app, _dir| { open_book(&mut app); app.focused_panel = FocusedPanel::Main(MainPanel::Content); simulate(&mut app, "n"); },
         check = |app| !app.is_normal_mode(); // toggles OFF
@@ -882,7 +919,7 @@ binding_tests! {
         check = |app| matches!(app.focused_panel, FocusedPanel::Popup(PopupWindow::CommentsViewer));
     popup_comments_space_e: KeyContext::PopupComments, "<Space>e",
         setup = |app, _dir| { open_book(&mut app); simulate(&mut app, "<Space>a"); },
-        check = |app| app.comments_viewer().map_or(false, |v| v.is_export_mode());
+        check = |app| app.comments_viewer().is_some_and(|v| v.is_export_mode());
     // Enter with no comment selected is a no-op (stays in popup)
     popup_comments_enter: KeyContext::PopupComments, "<CR>",
         setup = |app, _dir| { open_book(&mut app); simulate(&mut app, "<Space>a"); },
@@ -899,6 +936,65 @@ binding_tests! {
     popup_comments_n_upper: KeyContext::PopupComments, "N",
         setup = |app, _dir| { open_book(&mut app); simulate(&mut app, "<Space>a"); },
         check = |app| matches!(app.focused_panel, FocusedPanel::Popup(PopupWindow::CommentsViewer));
+
+    // ── Popup Marks ──────────────────────────────────
+    popup_marks_j: KeyContext::PopupMarks, "j",
+        setup = |app, _dir| { open_book(&mut app); app.focused_panel = FocusedPanel::Main(MainPanel::Content); simulate(&mut app, "`"); simulate(&mut app, "`"); },
+        check = |app| matches!(app.focused_panel, FocusedPanel::Popup(PopupWindow::MarksList));
+    popup_marks_down: KeyContext::PopupMarks, "<Down>",
+        setup = |app, _dir| { open_book(&mut app); app.focused_panel = FocusedPanel::Main(MainPanel::Content); simulate(&mut app, "`"); simulate(&mut app, "`"); },
+        check = |app| matches!(app.focused_panel, FocusedPanel::Popup(PopupWindow::MarksList));
+    popup_marks_k: KeyContext::PopupMarks, "k",
+        setup = |app, _dir| { open_book(&mut app); app.focused_panel = FocusedPanel::Main(MainPanel::Content); simulate(&mut app, "`"); simulate(&mut app, "`"); },
+        check = |app| matches!(app.focused_panel, FocusedPanel::Popup(PopupWindow::MarksList));
+    popup_marks_up: KeyContext::PopupMarks, "<Up>",
+        setup = |app, _dir| { open_book(&mut app); app.focused_panel = FocusedPanel::Main(MainPanel::Content); simulate(&mut app, "`"); simulate(&mut app, "`"); },
+        check = |app| matches!(app.focused_panel, FocusedPanel::Popup(PopupWindow::MarksList));
+    popup_marks_gg: KeyContext::PopupMarks, "gg",
+        setup = |app, _dir| { open_book(&mut app); app.focused_panel = FocusedPanel::Main(MainPanel::Content); simulate(&mut app, "`"); simulate(&mut app, "`"); },
+        check = |app| matches!(app.focused_panel, FocusedPanel::Popup(PopupWindow::MarksList));
+    popup_marks_g_upper: KeyContext::PopupMarks, "G",
+        setup = |app, _dir| { open_book(&mut app); app.focused_panel = FocusedPanel::Main(MainPanel::Content); simulate(&mut app, "`"); simulate(&mut app, "`"); },
+        check = |app| matches!(app.focused_panel, FocusedPanel::Popup(PopupWindow::MarksList));
+    popup_marks_ctrl_d: KeyContext::PopupMarks, "<C-d>",
+        setup = |app, _dir| { open_book(&mut app); app.focused_panel = FocusedPanel::Main(MainPanel::Content); simulate(&mut app, "`"); simulate(&mut app, "`"); },
+        check = |app| matches!(app.focused_panel, FocusedPanel::Popup(PopupWindow::MarksList));
+    popup_marks_ctrl_u: KeyContext::PopupMarks, "<C-u>",
+        setup = |app, _dir| { open_book(&mut app); app.focused_panel = FocusedPanel::Main(MainPanel::Content); simulate(&mut app, "`"); simulate(&mut app, "`"); },
+        check = |app| matches!(app.focused_panel, FocusedPanel::Popup(PopupWindow::MarksList));
+    popup_marks_ctrl_f: KeyContext::PopupMarks, "<C-f>",
+        setup = |app, _dir| { open_book(&mut app); app.focused_panel = FocusedPanel::Main(MainPanel::Content); simulate(&mut app, "`"); simulate(&mut app, "`"); },
+        check = |app| matches!(app.focused_panel, FocusedPanel::Popup(PopupWindow::MarksList));
+    popup_marks_ctrl_b: KeyContext::PopupMarks, "<C-b>",
+        setup = |app, _dir| { open_book(&mut app); app.focused_panel = FocusedPanel::Main(MainPanel::Content); simulate(&mut app, "`"); simulate(&mut app, "`"); },
+        check = |app| matches!(app.focused_panel, FocusedPanel::Popup(PopupWindow::MarksList));
+    popup_marks_pagedown: KeyContext::PopupMarks, "<PageDown>",
+        setup = |app, _dir| { open_book(&mut app); app.focused_panel = FocusedPanel::Main(MainPanel::Content); simulate(&mut app, "`"); simulate(&mut app, "`"); },
+        check = |app| matches!(app.focused_panel, FocusedPanel::Popup(PopupWindow::MarksList));
+    popup_marks_pageup: KeyContext::PopupMarks, "<PageUp>",
+        setup = |app, _dir| { open_book(&mut app); app.focused_panel = FocusedPanel::Main(MainPanel::Content); simulate(&mut app, "`"); simulate(&mut app, "`"); },
+        check = |app| matches!(app.focused_panel, FocusedPanel::Popup(PopupWindow::MarksList));
+    popup_marks_tab: KeyContext::PopupMarks, "<Tab>",
+        setup = |app, _dir| { open_book(&mut app); app.focused_panel = FocusedPanel::Main(MainPanel::Content); simulate(&mut app, "`"); simulate(&mut app, "`"); },
+        check = |app| matches!(app.focused_panel, FocusedPanel::Popup(PopupWindow::MarksList));
+    popup_marks_backtab: KeyContext::PopupMarks, "<S-Tab>",
+        setup = |app, _dir| { open_book(&mut app); app.focused_panel = FocusedPanel::Main(MainPanel::Content); simulate(&mut app, "`"); simulate(&mut app, "`"); },
+        check = |app| matches!(app.focused_panel, FocusedPanel::Popup(PopupWindow::MarksList));
+    popup_marks_dd: KeyContext::PopupMarks, "dd",
+        setup = |app, _dir| { open_book(&mut app); app.focused_panel = FocusedPanel::Main(MainPanel::Content); simulate(&mut app, "`"); simulate(&mut app, "`"); },
+        check = |app| matches!(app.focused_panel, FocusedPanel::Popup(PopupWindow::MarksList));
+    popup_marks_enter: KeyContext::PopupMarks, "<CR>",
+        setup = |app, _dir| { open_book(&mut app); app.focused_panel = FocusedPanel::Main(MainPanel::Content); simulate(&mut app, "`"); simulate(&mut app, "`"); },
+        check = |app| matches!(app.focused_panel, FocusedPanel::Popup(PopupWindow::MarksList));
+    popup_marks_esc: KeyContext::PopupMarks, "<Esc>",
+        setup = |app, _dir| { open_book(&mut app); app.focused_panel = FocusedPanel::Main(MainPanel::Content); simulate(&mut app, "`"); simulate(&mut app, "`"); },
+        check = |app| !matches!(app.focused_panel, FocusedPanel::Popup(PopupWindow::MarksList));
+    popup_marks_grave: KeyContext::PopupMarks, "`",
+        setup = |app, _dir| { open_book(&mut app); app.focused_panel = FocusedPanel::Main(MainPanel::Content); simulate(&mut app, "`"); simulate(&mut app, "`"); },
+        check = |app| !matches!(app.focused_panel, FocusedPanel::Popup(PopupWindow::MarksList));
+    popup_marks_apostrophe: KeyContext::PopupMarks, "'",
+        setup = |app, _dir| { open_book(&mut app); app.focused_panel = FocusedPanel::Main(MainPanel::Content); simulate(&mut app, "`"); simulate(&mut app, "`"); },
+        check = |app| !matches!(app.focused_panel, FocusedPanel::Popup(PopupWindow::MarksList));
 
     // ── Popup Settings ───────────────────────────────
     popup_settings_j: KeyContext::PopupSettings, "j",
@@ -971,6 +1067,7 @@ binding_tests! {
 // ═══════════════════════════════════════════════════════════════
 
 #[test]
+#[serial]
 fn content_q_returns_quit() {
     let (mut app, _dir) = create_app_content_focused();
     let result = simulate(&mut app, "q");
@@ -983,6 +1080,7 @@ fn content_q_returns_quit() {
 
 /// ? in help popup during search navigation should exit search, not close popup.
 #[test]
+#[serial]
 fn help_question_during_search_exits_search_not_popup() {
     let (mut app, _dir) = create_app();
     open_book(&mut app);

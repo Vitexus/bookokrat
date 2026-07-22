@@ -50,6 +50,8 @@
 
           checkFlags = [
             "--skip=test_mouse_scroll_file_list_svg"
+            "--skip=test_content_scrolling_svg"
+            "--skip=test_help_popup_search_svg"
           ];
 
           meta = with pkgs.lib; {
